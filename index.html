@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Воспоминания</title>
+    <style>
+        :root {
+            --primary: #a78bfa;
+            --primary-glow: #c4b5fd;
+            --bg-dark: #0f0a1e;
+            --glass: rgba(20, 15, 40, 0.6);
+            --text: #e0d8ff;
+            --text-muted: #b8a8ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text);
+            background: var(--bg-dark);
+        }
+
+        /* Технологичный фон с анимированным градиентом + subtle grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, #1e1433 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #2a1a4d 0%, transparent 50%),
+                var(--bg-dark);
+            background-size: 200% 200%;
+            animation: bgMove 25s ease infinite;
+            z-index: -3;
+        }
+
+        @keyframes bgMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                linear-gradient(90deg, transparent 99%, rgba(167, 139, 250, 0.05) 100%),
+                linear-gradient(0deg, transparent 99%, rgba(167, 139, 250, 0.05) 100%);
+            background-size: 50px 50px;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        /* Контейнер */
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .page {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            pointer-events: none;
+        }
+
+        .page.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        /* Login — современный glass */
+        #login {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        #login h1 {
+            font-size: 3.2rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(167, 139, 250, 0.4);
+        }
+
+        #login input {
+            padding: 1.3rem 2.2rem;
+            font-size: 1.3rem;
+            width: 340px;
+            max-width: 90%;
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            background: var(--glass);
+            color: white;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        #login input:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(167, 139, 250, 0.6);
+        }
+
+        #login button {
+            padding: 1.3rem 3.5rem;
+            font-size: 1.4rem;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(167, 139, 250, 0.4);
+            transition: all 0.4s ease;
+        }
+
+        #login button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 40px rgba(167, 139, 250, 0.8);
+        }
+
+        #error-msg {
+            margin-top: 1.5rem;
+            color: #ff6b8b;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Главная */
+        #main {
+            flex-direction: column;
+        }
+
+        .main-video {
+            width: 100%;
+            height: 45vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2vh 4vw;
+        }
+
+        .main-video video {
+            /* width: 100%; */
+            height: 100%;
+            max-width: 96%;
+            max-height: 96%;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+            border: 1px solid var(--primary);
+        }
+
+        /* Сетка контента */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3vw;
+            flex: 1;
+            overflow-y: auto;
+            padding: 3vh 4vw 8vh 4vw; /* место для футера */
+        }
+
+        /* Папки */
+        .folder-card {
+            background: var(--glass);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            overflow: hidden;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 0 50px rgba(167, 139, 250, 0.6);
+            border-color: var(--primary-glow);
+        }
+
+        .folder-preview {
+            position: relative;
+            width: 100%;
+            height: 75%;
+            background: #000;
+        }
+
+        .folder-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .folder-card:hover .folder-preview img {
+            transform: scale(1.1);
+        }
+
+        .folder-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5.5rem;
+            /* background: rgba(20, 15, 40, 0.8); */
+        }
+
+        .folder-card h3 {
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 1.6rem;
+            background: rgba(15, 10, 30, 0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Видео превью */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            cursor: pointer;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(167, 139, 250, 0.3);
+        }
+
+        .video-container:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 40px rgba(167, 139, 250, 0.6);
+            border-color: var(--primary-glow);
+        }
+
+        .video-container video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Навигация в папке */
+        #folder-nav {
+            padding: 2vh 4vw;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(167, 139, 250, 0.3);
+        }
+
+        #back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem 1.8rem;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4);
+            transition: all 0.4s ease;
+        }
+
+        #back-btn:hover {
+            transform: translateX(-6px) scale(1.05);
+            box-shadow: 0 0 35px rgba(167, 139, 250, 0.8);
+        }
+
+        #back-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        #breadcrumb {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 1.4rem;
+        }
+
+        .crumb {
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .crumb:hover {
+            color: white;
+            text-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .crumb.current {
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Модал */
+        #modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.96);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 100;
+            backdrop-filter: blur(15px);
+        }
+
+        #modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 96vw;
+            max-height: 96vh;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 0 80px rgba(167, 139, 250, 0.8);
+            border: 1px solid var(--primary);
+        }
+
+        #modal-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 3.5rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.2);
+            color: var(--primary-glow);
+        }
+
+        /* Футер */
+        .site-footer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass);
+            padding: 1rem 3rem;
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            z-index: 50;
+            font-size: 1.2rem;
+        }
+
+        .site-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .site-footer a:hover {
+            color: white;
+            text-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        /* Адаптив */
+        @media (max-width: 1024px) {
+            .content-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4vw; }
+            .main-video { height: 35vh; }
+        }
+
+        @media (max-width: 640px) {
+            .content-grid { grid-template-columns: 1fr; gap: 5vw; padding: 2vh 4vw 10vh 4vw; }
+            .main-video { height: 30vh; padding: 2vh 4vw; }
+            #login h1 { font-size: 2.4rem; }
+            #back-btn { padding: 1rem 1.5rem; font-size: 1.3rem; }
+            .site-footer { padding: 0.8rem 2rem; font-size: 1rem; bottom: 15px; }
+            #folder-nav { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section id="login" class="page active">
+            <h1>Доступ к воспоминаниям</h1>
+            <input type="text" id="date-input" placeholder="Введите дату рождения">
+            <button id="open-btn">Открыть</button>
+            <p id="error-msg">Неверная дата рождения</p>
+        </section>
+
+        <section id="main" class="page">
+            <div class="main-video">
+                <video controls muted loop playsinline autoplay preload="metadata">
+                    <source src="videos/intro/1.mp4" type="video/mp4">
+                </video>
+            </div>
+            <div class="content-grid" id="main-grid"></div>
+        </section>
+
+        <section id="folder" class="page">
+            <div id="folder-nav">
+                <button id="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Назад
+                </button>
+                <div id="breadcrumb"></div>
+            </div>
+            <div class="content-grid" id="folder-grid"></div>
+        </section>
+
+        <div id="modal">
+            <div class="modal-content">
+                <span class="modal-close">×</span>
+                <video id="modal-video" controls autoplay></video>
+            </div>
+        </div>
+
+        <div class="site-footer">
+            Скачать все воспоминания: <a href="https://t.me/your_channel" target="_blank" rel="noopener">t.me/your_channel</a>
+        </div>
+    </div>
+
+    <script>
+        const correctDate = "02.03.2003";
+
+        const mainVideoSrc = "videos/intro/1.mp4";
+
+        const foldersData = [
+            {
+                name: "Pl",
+                cover: "videos/folder1/cover.jpg",
+                path: "videos/folder1/",
+                subfolders: [
+                    {
+                        name: "Закопане",
+                        path: "videos/folder1/Закопане/",
+                        cover: "videos/folder1/Закопане/cover.jpg"
+                    },
+                    {
+                        name: "Морген",
+                        path: "videos/folder1/Морген/",
+                        cover: "videos/folder1/Морген/cover.jpg"
+                    },
+                    {
+                        name: "Новый год",
+                        path: "videos/folder1/Новый год/",
+                        cover: "videos/folder1/Новый год/cover.jpg"
+                    }
+                ]
+            },
+            {
+                name: "CH",
+                path: "videos/folder2/",
+                cover: "videos/folder2/cover.jpg"
+            },
+            {
+                name: "DE",
+                path: "videos/folder3/",
+                cover: "videos/folder3/cover.jpg"
+            },
+            {
+                name: "SP",
+                path: "videos/folder4/",
+                cover: "videos/folder4/cover.jpg"
+            },
+            {
+                name: "Клубы",
+                path: "videos/folder5/",
+                cover: "videos/folder5/cover.jpg",
+                subfolders: [
+                    {
+                        name: "Швейцария",
+                        path: "videos/folder5/Швейцария/",
+                        cover: "videos/folder5/Швейцария/cover.jpg"
+                    }
+                ]
+            },
+            {
+                name: "Майки",
+                path: "videos/folder7/",
+                cover: "videos/folder7/cover.jpg"
+            },
+            {
+                name: "Бурса",
+                path: "videos/folder8/",
+                cover: "videos/folder8/cover.jpg"
+            }
+        ];
+
+        const maxVideosPerFolder = 100;
+
+        const dateInput = document.getElementById('date-input');
+        const openBtn = document.getElementById('open-btn');
+        const errorMsg = document.getElementById('error-msg');
+
+        const mainGrid = document.getElementById('main-grid');
+        const folderGrid = document.getElementById('folder-grid');
+        const backBtn = document.getElementById('back-btn');
+        const breadcrumb = document.getElementById('breadcrumb');
+
+        const modal = document.getElementById('modal');
+        const modalVideo = document.getElementById('modal-video');
+        const modalClose = document.querySelector('.modal-close');
+
+        let navigationStack = [];
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            pauseAllVideos();
+        }
+
+        function pauseAllVideos() {
+            document.querySelectorAll('video').forEach(v => v.pause());
+        }
+
+        openBtn.addEventListener('click', () => {
+            if (dateInput.value.trim() === correctDate) {
+                errorMsg.style.opacity = '0';
+                showPage('main');
+            } else {
+                errorMsg.style.opacity = '1';
+                dateInput.value = '';
+            }
+        });
+
+        dateInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') openBtn.click();
+        });
+
+        function createFolderCard(folder) {
+            const card = document.createElement('div');
+            card.className = 'folder-card';
+
+            const hasCover = folder.cover || false;
+
+            card.innerHTML = `
+                <div class="folder-preview">
+                    ${hasCover ? `<img src="${folder.cover}" alt="${folder.name}">` : ''}
+                    <div class="folder-fallback"></div>
+                </div>
+                <h3>${folder.name}</h3>
+            `;
+
+            if (hasCover) {
+                const img = card.querySelector('img');
+                img.addEventListener('error', () => {
+                    img.style.display = 'none';
+                    card.querySelector('.folder-fallback').style.display = 'flex';
+                });
+            }
+
+            card.addEventListener('click', () => openFolder(folder));
+            return card;
+        }
+
+        foldersData.forEach(folder => {
+            mainGrid.appendChild(createFolderCard(folder));
+        });
+
+        function renderBreadcrumb() {
+            breadcrumb.innerHTML = '';
+
+            if (navigationStack.length === 0) return;
+
+            const homeCrumb = document.createElement('span');
+            homeCrumb.className = 'crumb';
+            homeCrumb.textContent = 'Главная';
+            homeCrumb.addEventListener('click', () => {
+                navigationStack = [];
+                showPage('main');
+            });
+            breadcrumb.appendChild(homeCrumb);
+
+            navigationStack.forEach((f, i) => {
+                const separator = document.createTextNode(' > ');
+                breadcrumb.appendChild(separator);
+
+                const crumb = document.createElement('span');
+                crumb.className = 'crumb';
+                if (i === navigationStack.length - 1) {
+                    crumb.classList.add('current');
+                } else {
+                    crumb.dataset.index = i;
+                    crumb.addEventListener('click', () => {
+                        navigationStack = navigationStack.slice(0, i + 1);
+                        renderContent(f);
+                    });
+                }
+                crumb.textContent = f.name;
+                breadcrumb.appendChild(crumb);
+            });
+        }
+
+        function renderContent(folder) {
+            const grid = folderGrid;
+            grid.innerHTML = '';
+
+            if (folder.subfolders && folder.subfolders.length > 0) {
+                folder.subfolders.forEach(sub => {
+                    grid.appendChild(createFolderCard(sub));
+                });
+            }
+
+            if (folder.path) {
+                for (let i = 1; i <= maxVideosPerFolder; i++) {
+                    const src = folder.path + i + ".mp4";
+
+                    const container = document.createElement('div');
+                    container.className = 'video-container';
+
+                    const video = document.createElement('video');
+                    video.muted = true;
+                    video.preload = "none";
+
+                    const source = document.createElement('source');
+                    source.src = src;
+                    source.type = "video/mp4";
+                    video.appendChild(source);
+
+                    video.addEventListener('loadedmetadata', () => {
+                        container.appendChild(video);
+                        grid.appendChild(container);
+
+                        container.addEventListener('mouseenter', () => video.play().catch(() => {}));
+                        container.addEventListener('mouseleave', () => {
+                            video.pause();
+                            video.currentTime = 0;
+                        });
+
+                        container.addEventListener('click', () => {
+                            pauseAllVideos();
+                            modalVideo.innerHTML = `<source src="${src}" type="video/mp4">`;
+                            modalVideo.load();
+                            modalVideo.muted = false;
+                            modalVideo.controls = true;
+                            modal.classList.add('active');
+                            modalVideo.play().catch(() => {});
+                        });
+                    });
+
+                    video.addEventListener('error', () => {});
+
+                    video.load();
+                }
+            }
+
+            renderBreadcrumb();
+        }
+
+        function openFolder(folder) {
+            navigationStack.push(folder);
+            showPage('folder');
+            renderContent(folder);
+        }
+
+        backBtn.addEventListener('click', () => {
+            if (navigationStack.length > 1) {
+                navigationStack.pop();
+                renderContent(navigationStack[navigationStack.length - 1]);
+            } else if (navigationStack.length === 1) {
+                navigationStack = [];
+                showPage('main');
+            }
+        });
+
+        modalClose.addEventListener('click', () => {
+            modal.classList.remove('active');
+            modalVideo.pause();
+        });
+
+        modal.addEventListener('click', e => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                modalVideo.pause();
+            }
+        });
+    </script>
+</body>
+</html>
